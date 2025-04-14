@@ -24,28 +24,38 @@ def save_users(users):
     with open(USER_FILE, "w") as f:
         json.dump(users, f)
 
+# Hash password using SHA-256
+def hash_password(password):
+    return hashlib.sha256(password.encode()).hexdigest()
+
+# Signup user
+def signup_user(username, password):
+    users = load_users()
+    # Check if username exists (case-insensitive)
+    for existing in users.keys():
+        if existing.lower() == username.lower():
+            return False  # Username exists
+    users[username] = hash_password(password)
+    save_users(users)
+    return True
+
+# Login user
 def login_user(username, password):
     users = load_users()
-    if username in users and users[username] == password:
+    hashed_pw = hash_password(password)
+    if username in users and users[username] == hashed_pw:
         st.session_state.logged_in = True
         st.session_state.username = username
         return True
     return False
 
-def signup_user(username, password):
-    users = load_users()
-    if username in users:
-        return False  # Already exists
-    users[username] = password
-    save_users(users)
-    return True
+# Session Terminate Functions
+def logout_user():
+    st.session_state.logged_in = False
+    st.session_state.username = ""
 
-def hash_password(password):
-    return hashlib.sha256(password.encode()).hexdigest()
-
-def signup_user(username, password):
-    # Hash before saving
-    hashed_pw = hash_password(password)
+def is_logged_in():
+    return st.session_state.get("logged_in", False)
 
 # Image Analysis Functions
 def convert_to_grayscale(image):
@@ -72,12 +82,3 @@ def plot_histogram(image):
         hist = cv2.calcHist([image], [i], None, [256], [0, 256])
         hist_data[col] = hist
     return hist_data
-
-
-# Session Terminate Functions
-def logout_user():
-    st.session_state.logged_in = False
-    st.session_state.username = ""
-
-def is_logged_in():
-    return st.session_state.get("logged_in", False)
